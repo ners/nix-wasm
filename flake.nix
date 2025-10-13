@@ -98,11 +98,12 @@
         legacyPackages.${system} = wasmPackages // {
           inherit haskellPackages;
         };
-        packages.${system}.default = hp.rhine;
+        packages.${system}.default = haskellPackages.rhine;
         devShells.${system}.default = pkgs.mkShell {
           buildInputs = [
             (inputs.ghc-wasm-meta.packages.${system}.all_9_12)
           ];
+          env.NIXPKGS_ALLOW_BROKEN = "1";
         };
       }
     );

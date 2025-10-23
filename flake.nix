@@ -5,6 +5,7 @@
       url = "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    flake-compat.url = "github:nix-community/flake-compat";
   };
 
   outputs = inputs:

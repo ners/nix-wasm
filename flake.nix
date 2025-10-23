@@ -1,6 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    # nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:ners/nixpkgs/haskell";
     ghc-wasm-meta = {
       url = "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -58,11 +59,16 @@
               packageOverrides = lib.composeManyExtensions [
                 prev.haskell.packageOverrides
                 (hfinal: hprev: {
+                  ghc = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-ghc-9_12 // {
+                    inherit (inputs.nixpkgs.legacyPackages.${system}.haskell.packages.${ghc}.ghc) version haskellCompilerName;
+                    inherit targetPrefix;
+                  };
                   mkDerivation = args: (hprev.mkDerivation (args // {
                     enableLibraryProfiling = false;
                     enableSharedLibraries = true;
                     enableStaticLibraries = false;
                     doBenchmark = false;
+                    doHaddock = false;
                     doCheck = false;
                     jailbreak = true;
                     configureFlags = [
@@ -100,12 +106,9 @@
         legacyPackages.${system} = wasmPackages // {
           inherit haskellPackages;
         };
-        packages.${system}.default = haskellPackages.rhine;
-        devShells.${system}.default = pkgs.mkShell {
-          buildInputs = [
-            (inputs.ghc-wasm-meta.packages.${system}.all_9_12)
-          ];
-          env.NIXPKGS_ALLOW_BROKEN = "1";
+        packages.${system}.default = haskellPackages.lens-aeson;
+        devShells.${system}.default = haskellPackages.shellFor {
+          packages = ps: [ ps.lens-aeson ];
         };
       }
     );

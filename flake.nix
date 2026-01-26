@@ -1,12 +1,11 @@
 {
   inputs = {
-    # nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs.url = "github:ners/nixpkgs/haskell";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    flake-compat.url = "github:nix-community/flake-compat";
     ghc-wasm-meta = {
-      url = "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
+      url = "github:haskell-wasm/ghc-wasm-meta";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    flake-compat.url = "github:nix-community/flake-compat";
   };
 
   outputs = inputs:
@@ -46,16 +45,13 @@
         crossOverlays = [
           (final: prev: {
             cabal-install = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-cabal-9_12;
-            haskell = prev.haskell.override (old: {
+            haskell = (prev.haskell.override (old: {
               buildPackages = lib.recursiveUpdate old.buildPackages {
                 haskell.compiler.${ghc} = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-ghc-9_12 // {
                   inherit targetPrefix;
                 };
               };
-            });
-          })
-          (final: prev: {
-            haskell = prev.haskell // {
+            })) // {
               packageOverrides = lib.composeManyExtensions [
                 prev.haskell.packageOverrides
                 (hfinal: hprev: {
@@ -67,6 +63,7 @@
                     enableLibraryProfiling = false;
                     enableSharedLibraries = true;
                     enableStaticLibraries = false;
+                    enableExternalInterpreter = false;
                     doBenchmark = false;
                     doHaddock = false;
                     doCheck = false;
@@ -77,7 +74,7 @@
                       "--with-strip=${prev.stdenv.cc.bintools}/bin/strip"
                     ];
                     #buildFlags = (args.buildFlags or []) ++ ["-v3"];
-                    setupHaskellDepends = (args.setupHaskellDepends or []) ++ [
+                    setupHaskellDepends = (args.setupHaskellDepends or [ ]) ++ [
                       # This executes the wasi-sdk setup-hook that sets toolchain env vars such as AR, CC, ...
                       inputs.ghc-wasm-meta.packages.${system}.wasi-sdk
                     ];
@@ -91,6 +88,7 @@
                       export CC_FOR_BUILD=$CC
                     '';
                   });
+                  zlib = prev.haskell.lib.compose.addBuildDepend hprev.zlib-clib hprev.zlib;
                 })
               ];
             };
@@ -102,13 +100,16 @@
       let
         wasmPackages = wasmPkgs system;
         haskellPackages = wasmPackages.haskell.packages.${ghc};
-      in {
-        legacyPackages.${system} = wasmPackages // {
+        defaultPackage = "lens-aeson";
+      in
+      {
+        legacyPackages.${system} = lib.recursiveUpdate pkgs {
           inherit haskellPackages;
+          haskell.packages.${ghc} = haskellPackages;
         };
-        packages.${system}.default = haskellPackages.lens-aeson;
+        packages.${system}.default = haskellPackages.${defaultPackage};
         devShells.${system}.default = haskellPackages.shellFor {
-          packages = ps: [ ps.lens-aeson ];
+          packages = ps: [ ps.${defaultPackage} ];
         };
       }
     );

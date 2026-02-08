@@ -17,9 +17,26 @@
         else if isAttrs xs then mapAttrsToList f xs
         else throw "foreach: expected list or attrset but got ${typeOf xs}"
       );
-      ghc = "ghc9122";
+      importNixpkgs = system:
+        let
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
+          patchedPkgs = pkgs.stdenvNoCC.mkDerivation {
+            name = "patched-nixpkgs";
+            src = inputs.nixpkgs;
+            patches = [
+              ./nixpkgs-patches/generic-builder.patch
+              ./nixpkgs-patches/with-packages-wrapper.patch
+            ];
+            dontBuild = true;
+            installPhase = ''
+              cp -r . "$out"
+            '';
+          };
+        in
+          import patchedPkgs;
+      ghc = "ghc9123";
       targetPrefix = "wasm32-wasi-";
-      wasmPkgs = system: import inputs.nixpkgs rec {
+      wasmPkgs = system: importNixpkgs system rec {
         inherit system;
         crossSystem = lib.systems.elaborate lib.systems.examples.wasi32 // {
           isStatic = false;
@@ -42,6 +59,11 @@
             };
           };
         };
+        overlays = [
+          (final: prev: {
+            cabal-install = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-cabal-9_12;
+          })
+        ];
         crossOverlays = [
           (final: prev: {
             cabal-install = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-cabal-9_12;
@@ -55,6 +77,7 @@
               packageOverrides = lib.composeManyExtensions [
                 prev.haskell.packageOverrides
                 (hfinal: hprev: {
+                  ghcWithPackages = hprev.ghcWithPackages.override { installDocumentation = false; };
                   ghc = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-ghc-9_12 // {
                     inherit (inputs.nixpkgs.legacyPackages.${system}.haskell.packages.${ghc}.ghc) version haskellCompilerName;
                     inherit targetPrefix;
@@ -103,13 +126,17 @@
         defaultPackage = "lens-aeson";
       in
       {
-        legacyPackages.${system} = lib.recursiveUpdate pkgs {
+        legacyPackages.${system} = lib.recursiveUpdate wasmPackages {
           inherit haskellPackages;
           haskell.packages.${ghc} = haskellPackages;
         };
         packages.${system}.default = haskellPackages.${defaultPackage};
         devShells.${system}.default = haskellPackages.shellFor {
-          packages = ps: [ ps.${defaultPackage} ];
+          packages = ps: [ ps.lens-aeson ];
+          withHoogle = false;
+          nativeBuildInputs = with wasmPackages; [
+            cabal-install
+          ];
         };
       }
     );

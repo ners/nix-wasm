@@ -34,7 +34,7 @@
           };
         in
           import patchedPkgs;
-      ghc = "ghc9123";
+      ghc = "ghc912";
       targetPrefix = "wasm32-wasi-";
       wasmPkgs = system: importNixpkgs system rec {
         inherit system;
@@ -123,19 +123,29 @@
       let
         wasmPackages = wasmPkgs system;
         haskellPackages = wasmPackages.haskell.packages.${ghc};
-        defaultPackage = "lens-aeson";
+        example = hp: hp.callCabal2nix "example" ./example { };
       in
       {
         legacyPackages.${system} = lib.recursiveUpdate wasmPackages {
           inherit haskellPackages;
-          haskell.packages.${ghc} = haskellPackages;
+          haskell.packages.${ghc} = example haskellPackages;
         };
-        packages.${system}.default = haskellPackages.${defaultPackage};
-        devShells.${system}.default = haskellPackages.shellFor {
-          packages = ps: [ ps.lens-aeson ];
-          withHoogle = false;
-          nativeBuildInputs = with wasmPackages; [
-            cabal-install
+        packages.${system}.default = example;
+        devShells.${system}.default = pkgs.mkShell {
+          inputsFrom = [
+            (haskellPackages.shellFor {
+              packages = hp: [ (example hp) ];
+              nativeBuildInputs = with wasmPackages; [
+                cabal-install
+              ];
+            })
+            (pkgs.haskell.packages.${ghc}.shellFor {
+              packages = hp: [ (example hp) ];
+              nativeBuildInputs = with pkgs; with haskell.packages.${ghc}; [
+                pkgs.haskellPackages.cabal-install
+                haskell-language-server
+              ];
+            })
           ];
         };
       }

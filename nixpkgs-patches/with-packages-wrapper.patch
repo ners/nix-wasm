@@ -11,22 +11,6 @@ index 9968ea355363..57e0fdf83aa3 100644
      else
        "$out/lib/${ghc.targetPrefix}${ghc.haskellCompilerName}"
        + lib.optionalString (ghc ? hadrian) "/lib";
-@@ -96,7 +98,6 @@ else
-         if [[ -x "${ghc}/bin/$prg" ]]; then
-           rm -f $out/bin/$prg
-           makeWrapper ${ghc}/bin/$prg $out/bin/$prg                           \
--            --add-flags '"-B$NIX_${ghcCommandCaps}_LIBDIR"'                   \
-             --set "NIX_${ghcCommandCaps}"        "$out/bin/${ghcCommand}"     \
-             --set "NIX_${ghcCommandCaps}PKG"     "$out/bin/${ghcCommand}-pkg" \
-             --set "NIX_${ghcCommandCaps}_DOCDIR" "${docDir}"                  \
-@@ -129,7 +130,6 @@ else
-       if [[ -x "${ghc}/bin/haddock" ]]; then
-         rm -f $out/bin/haddock
-         makeWrapper ${ghc}/bin/haddock $out/bin/haddock    \
--          --add-flags '"-B$NIX_${ghcCommandCaps}_LIBDIR"'  \
-           --set "NIX_${ghcCommandCaps}_LIBDIR" "${libDir}"
-       fi
- 
 @@ -173,8 +173,8 @@ else
          # to another nix derivation, so they are not writable.  Removing
          # them allow the correct behavior of ghc-pkg recache

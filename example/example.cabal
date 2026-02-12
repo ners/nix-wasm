@@ -1,0 +1,9 @@
+cabal-version: 3.0
+name: example
+version: 0.0.0
+build-type: Simple
+
+executable example
+    hs-source-dirs: .
+    main-is: Main.hs
+    build-depends: base, microlens

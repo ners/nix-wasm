@@ -141,9 +141,9 @@
             })
             (pkgs.haskell.packages.${ghc}.shellFor {
               packages = hp: [ (example hp) ];
-              nativeBuildInputs = with pkgs; with haskell.packages.${ghc}; [
-                pkgs.haskellPackages.cabal-install
-                haskell-language-server
+              nativeBuildInputs = with pkgs; [
+                cabal-install
+                haskell.packages.${ghc}.haskell-language-server
               ];
             })
           ];

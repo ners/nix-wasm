@@ -34,7 +34,7 @@
           };
         in
           import patchedPkgs;
-      ghc = "ghc912";
+      ghc = "ghc914";
       targetPrefix = "wasm32-wasi-";
       wasmPkgs = system: importNixpkgs system rec {
         inherit system;
@@ -46,14 +46,14 @@
             buildPlatform
             hostPlatform
             targetPlatform;
-          cc = inputs.ghc-wasm-meta.packages.${system}.all_9_12 // {
+          cc = inputs.ghc-wasm-meta.packages.${system}.all_9_14 // {
             isGNU = false;
             isClang = true;
             libc = inputs.ghc-wasm-meta.packages.${system}.wasi-sdk.overrideAttrs (attrs: { pname = attrs.name; version = "unstable1"; });
             inherit targetPrefix;
-            bintools = inputs.ghc-wasm-meta.packages.${system}.all_9_12 // {
+            bintools = inputs.ghc-wasm-meta.packages.${system}.all_9_14 // {
               inherit targetPrefix;
-              bintools = inputs.ghc-wasm-meta.packages.${system}.all_9_12 // {
+              bintools = inputs.ghc-wasm-meta.packages.${system}.all_9_14 // {
                 inherit targetPrefix;
               };
             };
@@ -61,15 +61,15 @@
         };
         overlays = [
           (final: prev: {
-            cabal-install = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-cabal-9_12;
+            cabal-install = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-cabal-9_14;
           })
         ];
         crossOverlays = [
           (final: prev: {
-            cabal-install = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-cabal-9_12;
+            cabal-install = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-cabal-9_14;
             haskell = (prev.haskell.override (old: {
               buildPackages = lib.recursiveUpdate old.buildPackages {
-                haskell.compiler.${ghc} = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-ghc-9_12 // {
+                haskell.compiler.${ghc} = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-ghc-9_14 // {
                   inherit targetPrefix;
                 };
               };
@@ -78,7 +78,7 @@
                 prev.haskell.packageOverrides
                 (hfinal: hprev: {
                   ghcWithPackages = hprev.ghcWithPackages.override { installDocumentation = false; };
-                  ghc = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-ghc-9_12 // {
+                  ghc = inputs.ghc-wasm-meta.packages.${system}.wasm32-wasi-ghc-9_14 // {
                     inherit (inputs.nixpkgs.legacyPackages.${system}.haskell.packages.${ghc}.ghc) version haskellCompilerName;
                     inherit targetPrefix;
                   };
